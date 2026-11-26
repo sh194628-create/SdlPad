@@ -1,0 +1,1723 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SdlPad かんたん取扱説明書 — DirectX11 × SDL3 コントローラー入力</title>
+<style>
+  :root {
+    --bg: #f4f7fb;
+    --surface: #ffffff;
+    --surface-2: #f1f5f9;
+    --surface-3: #e8eef7;
+    --border: #dde5f0;
+    --text: #0f172a;
+    --text-muted: #475569;
+    --accent: #2563eb;
+    --accent-hover: #1d4ed8;
+    --accent-soft: #eff6ff;
+    --accent-border: #bfdbfe;
+    --code-bg: #0f172a;
+    --code-text: #e2e8f0;
+    --inline-code-bg: #e2e8f0;
+    --inline-code-text: #0f172a;
+    --warn-bg: #fffbeb;
+    --warn-border: #f59e0b;
+    --warn-text: #92400e;
+    --danger-bg: #fef2f2;
+    --danger-border: #ef4444;
+    --danger-text: #991b1b;
+    --ok-bg: #f0fdf4;
+    --ok-border: #22c55e;
+    --ok-text: #166534;
+    --shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+    --radius: 12px;
+    --sidebar-w: 276px;
+  }
+
+  [data-theme="dark"] {
+    --bg: #0b1120;
+    --surface: #111827;
+    --surface-2: #1e293b;
+    --surface-3: #243247;
+    --border: #293548;
+    --text: #f1f5f9;
+    --text-muted: #94a3b8;
+    --accent: #60a5fa;
+    --accent-hover: #93c5fd;
+    --accent-soft: #172554;
+    --accent-border: #1e40af;
+    --code-bg: #060b16;
+    --code-text: #e2e8f0;
+    --inline-code-bg: #1e293b;
+    --inline-code-text: #93c5fd;
+    --warn-bg: #2a1e0a;
+    --warn-border: #d97706;
+    --warn-text: #fde68a;
+    --danger-bg: #2c1014;
+    --danger-border: #dc2626;
+    --danger-text: #fecaca;
+    --ok-bg: #0c2618;
+    --ok-border: #16a34a;
+    --ok-text: #bbf7d0;
+    --shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    margin: 0;
+    font-family: "Segoe UI", "Yu Gothic UI", "Hiragino Kaku Gothic ProN", "Meiryo", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.75;
+    font-size: 15px;
+  }
+
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  .layout { display: flex; min-height: 100vh; }
+
+  /* Sidebar */
+  .sidebar {
+    position: fixed;
+    top: 0; left: 0;
+    width: var(--sidebar-w);
+    height: 100vh;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding: 20px 16px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    z-index: 25;
+  }
+
+  .brand {
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .brand-title {
+    font-size: 17px;
+    font-weight: 800;
+    margin: 0 0 2px;
+    letter-spacing: -0.01em;
+  }
+  .brand-sub {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin: 0;
+  }
+
+  .nav-group-title {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    margin: 10px 0 4px 10px;
+    text-transform: uppercase;
+  }
+
+  .nav-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .nav-list a {
+    display: block;
+    padding: 7px 10px;
+    border-radius: 8px;
+    color: var(--text-muted);
+    font-size: 13.5px;
+    font-weight: 500;
+    transition: background 0.15s, color 0.15s;
+  }
+  .nav-list a:hover {
+    background: var(--surface-2);
+    color: var(--text);
+    text-decoration: none;
+  }
+  .nav-list a.active {
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-weight: 700;
+  }
+
+  .sidebar-footer {
+    margin-top: auto;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.15s;
+  }
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+  .btn.full { width: 100%; }
+  .btn.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+  .btn.primary:hover { background: var(--accent-hover); color: #fff; }
+
+  /* Main */
+  .main {
+    margin-left: var(--sidebar-w);
+    flex: 1;
+    max-width: 980px;
+    padding: 32px 38px 80px;
+  }
+
+  /* Hero */
+  .hero {
+    background: linear-gradient(135deg, var(--surface) 0%, var(--accent-soft) 100%);
+    border: 1px solid var(--accent-border);
+    border-radius: var(--radius);
+    padding: 26px 28px;
+    box-shadow: var(--shadow);
+    margin-bottom: 26px;
+  }
+  .hero-kicker {
+    display: inline-block;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--accent);
+    background: var(--surface);
+    border: 1px solid var(--accent-border);
+    padding: 2px 10px;
+    border-radius: 999px;
+    margin-bottom: 10px;
+  }
+  .hero h1 {
+    margin: 0 0 10px;
+    font-size: 25px;
+    line-height: 1.35;
+  }
+  .hero p {
+    margin: 0 0 16px;
+    color: var(--text-muted);
+    font-size: 15px;
+  }
+  .badge-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .badge {
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+  }
+
+  /* Section */
+  section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px 28px;
+    box-shadow: var(--shadow);
+    margin-bottom: 24px;
+    scroll-margin-top: 20px;
+  }
+
+  h2 {
+    margin: 0 0 16px;
+    font-size: 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .sec-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+    height: 28px;
+    padding: 0 7px;
+    border-radius: 8px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-size: 13.5px;
+    font-weight: 800;
+    flex-shrink: 0;
+  }
+
+  h3 {
+    margin: 22px 0 10px;
+    font-size: 16px;
+  }
+
+  p { margin: 0 0 12px; }
+  ul, ol { margin: 0 0 14px; padding-left: 22px; }
+  li { margin-bottom: 6px; }
+
+  code {
+    font-family: "Cascadia Code", "Consolas", "SFMono-Regular", monospace;
+    font-size: 0.89em;
+    background: var(--inline-code-bg);
+    color: var(--inline-code-text);
+    padding: 2px 6px;
+    border-radius: 5px;
+  }
+
+  /* Cards / Grids */
+  .grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    margin: 14px 0 18px;
+  }
+  .grid-2 {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+    margin: 14px 0 18px;
+  }
+  .card {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 15px 16px;
+  }
+  .card-title {
+    font-weight: 700;
+    font-size: 14.5px;
+    margin: 0 0 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .step-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .card p {
+    margin: 0;
+    font-size: 13.5px;
+    color: var(--text-muted);
+  }
+
+  /* Code blocks */
+  .code-wrap {
+    margin: 10px 0 16px;
+    border-radius: 9px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    background: var(--code-bg);
+  }
+  .code-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 7px 14px;
+    background: rgba(255, 255, 255, 0.05);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+    font-size: 12px;
+    color: #94a3b8;
+    font-family: "Cascadia Code", "Consolas", monospace;
+  }
+  .copy-btn {
+    background: rgba(255, 255, 255, 0.12);
+    color: #f1f5f9;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 6px;
+    padding: 3px 10px;
+    font-size: 11.5px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.15s;
+  }
+  .copy-btn:hover { background: rgba(255, 255, 255, 0.22); }
+  .copy-btn.copied { background: #16a34a; border-color: #22c55e; color: #fff; }
+
+  pre {
+    margin: 0;
+    padding: 14px 16px;
+    overflow-x: auto;
+    color: var(--code-text);
+    font-family: "Cascadia Code", "Consolas", monospace;
+    font-size: 13px;
+    line-height: 1.58;
+  }
+  pre code { background: none; color: inherit; padding: 0; font-size: inherit; }
+
+  /* Callouts */
+  .callout {
+    padding: 14px 16px;
+    border-radius: 9px;
+    border-left: 4px solid;
+    margin: 14px 0;
+    font-size: 14px;
+  }
+  .callout-title { font-weight: 700; margin-bottom: 4px; }
+  .callout.info { background: var(--accent-soft); border-color: var(--accent); color: var(--text); }
+  .callout.ok { background: var(--ok-bg); border-color: var(--ok-border); color: var(--ok-text); }
+  .callout.warn { background: var(--warn-bg); border-color: var(--warn-border); color: var(--warn-text); }
+  .callout.danger { background: var(--danger-bg); border-color: var(--danger-border); color: var(--danger-text); }
+
+  /* Timeline table for Press/Trigger/Release */
+  .table-wrap { overflow-x: auto; margin: 12px 0 16px; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+  }
+  th, td {
+    text-align: left;
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  th {
+    background: var(--surface-2);
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  tr:hover td { background: rgba(148, 163, 184, 0.06); }
+
+  .t-on {
+    display: inline-block;
+    padding: 2px 9px;
+    border-radius: 6px;
+    background: var(--ok-bg);
+    color: var(--ok-text);
+    border: 1px solid var(--ok-border);
+    font-weight: 700;
+    font-size: 12px;
+  }
+  .t-off {
+    display: inline-block;
+    padding: 2px 9px;
+    border-radius: 6px;
+    background: var(--surface-2);
+    color: var(--text-muted);
+    font-size: 12px;
+  }
+
+  /* Interactive Gamepad Map */
+  .pad-panel {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px;
+    margin: 14px 0 18px;
+  }
+  .pad-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .pad-tabs {
+    display: inline-flex;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    padding: 3px;
+    gap: 4px;
+  }
+  .pad-tab {
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    padding: 6px 14px;
+    border-radius: 7px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.15s;
+  }
+  .pad-tab.active {
+    background: var(--accent);
+    color: #fff;
+  }
+  .pad-hint {
+    font-size: 12.5px;
+    color: var(--text-muted);
+  }
+  .pad-svg-box {
+    display: flex;
+    justify-content: center;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px;
+    overflow-x: auto;
+  }
+  .pad-svg-box svg {
+    width: 100%;
+    max-width: 680px;
+    height: auto;
+    user-select: none;
+  }
+  .pad-hit {
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.15s;
+  }
+  .pad-hit:hover .hit-shape {
+    stroke: var(--accent);
+    stroke-width: 3;
+    filter: brightness(1.08);
+  }
+  .pad-hit.selected .hit-shape {
+    stroke: #f59e0b;
+    stroke-width: 3.5;
+  }
+
+  .pad-inspector {
+    margin-top: 14px;
+    background: var(--surface);
+    border: 1px solid var(--accent-border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+  }
+  .pad-inspector-meta { flex: 1; min-width: 240px; }
+  .pad-inspector-name {
+    font-weight: 800;
+    font-size: 15px;
+    margin-bottom: 4px;
+  }
+  .pad-inspector-code {
+    font-family: "Cascadia Code", "Consolas", monospace;
+    font-size: 13px;
+    color: var(--accent);
+    word-break: break-all;
+  }
+  .pad-inspector-desc {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+
+  /* Stick diagram */
+  .axis-box {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+    align-items: center;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    margin: 12px 0 16px;
+  }
+  .axis-diagram {
+    flex: 0 0 210px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px;
+    text-align: center;
+  }
+  .axis-text { flex: 1; min-width: 240px; }
+
+  /* Recipe tabs / cards */
+  .recipe {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 18px;
+    margin-bottom: 14px;
+    background: var(--surface-2);
+  }
+  .recipe-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+  .recipe-tag {
+    font-size: 11.5px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 6px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    border: 1px solid var(--accent-border);
+  }
+  .recipe-title { font-weight: 700; font-size: 15px; }
+  .recipe p { font-size: 13.5px; color: var(--text-muted); margin: 0 0 8px; }
+  .recipe .code-wrap { margin: 8px 0 0; }
+
+  /* Checklist */
+  .checklist {
+    list-style: none;
+    padding: 0;
+    margin: 12px 0 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .checklist li {
+    margin: 0;
+    padding: 10px 12px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .checklist input[type="checkbox"] {
+    margin-top: 4px;
+    width: 17px; height: 17px;
+    accent-color: var(--accent);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .checklist label { cursor: pointer; flex: 1; }
+  .checklist li.done label { text-decoration: line-through; color: var(--text-muted); }
+
+  /* Details */
+  details {
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    margin: 10px 0;
+    background: var(--surface-2);
+    overflow: hidden;
+  }
+  summary {
+    padding: 11px 16px;
+    font-weight: 700;
+    cursor: pointer;
+    user-select: none;
+    font-size: 14px;
+  }
+  details[open] summary { border-bottom: 1px solid var(--border); }
+  details .details-body {
+    padding: 10px 14px 12px;
+    background: var(--surface);
+  }
+
+  .ctrl-xbox { color: #16a34a; font-weight: 700; }
+  .ctrl-ps { color: #2563eb; font-weight: 700; }
+  .ctrl-sw { color: #e11d48; font-weight: 700; }
+  [data-theme="dark"] .ctrl-xbox { color: #4ade80; }
+  [data-theme="dark"] .ctrl-ps { color: #60a5fa; }
+  [data-theme="dark"] .ctrl-sw { color: #fb7185; }
+
+  .mobile-header {
+    display: none;
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 16px;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  @media (max-width: 920px) {
+    .mobile-header { display: flex; }
+    .sidebar {
+      transform: translateX(-100%);
+      transition: transform 0.2s ease;
+    }
+    .sidebar.open { transform: translateX(0); }
+    .main { margin-left: 0; padding: 18px 16px 60px; }
+    section, .hero { padding: 18px 16px; }
+    .grid-3, .grid-2 { grid-template-columns: 1fr; }
+  }
+
+  @media print {
+    .sidebar, .mobile-header, .copy-btn, .btn, .pad-tabs { display: none !important; }
+    .main { margin-left: 0; max-width: 100%; padding: 0; }
+    section, .hero { box-shadow: none; break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<div class="mobile-header">
+  <strong>SdlPad 取扱説明書</strong>
+  <button class="btn" type="button" onclick="document.querySelector('.sidebar').classList.toggle('open')">目次を開く</button>
+</div>
+
+<div class="layout">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-title">SdlPad 取扱説明書</div>
+      <p class="brand-sub">はじめての人向け 完全ガイド</p>
+    </div>
+
+    <div class="nav-group-title">まずはここから</div>
+    <ul class="nav-list">
+      <li><a href="#quickstart">1. 最短スタート（まず1行書く）</a></li>
+      <li><a href="#basics">2. Press / Trigger / Release の違い</a></li>
+      <li><a href="#padmap">3. ボタン・軸マップ（図解）</a></li>
+    </ul>
+
+    <div class="nav-group-title">ゲームに組み込む</div>
+    <ul class="nav-list">
+      <li><a href="#recipes">4. やりたいこと逆引きレシピ</a></li>
+      <li><a href="#rules">5. 絶対に守るルール・よくあるミス</a></li>
+      <li><a href="#api">6. 全関数（API）一覧</a></li>
+    </ul>
+
+    <div class="nav-group-title">環境設定・保守</div>
+    <ul class="nav-list">
+      <li><a href="#setup">7. ファイル構成とビルド設定</a></li>
+      <li><a href="#troubleshoot">8. 困ったときの対処法</a></li>
+      <li><a href="#source">9. ソースコード全文</a></li>
+      <li><a href="#release">10. 配布時の注意・拡張アイデア</a></li>
+    </ul>
+
+    <div class="sidebar-footer">
+      <button class="btn full" id="themeToggle" type="button">ダークモード切替</button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="hero">
+      <div class="hero-kicker">DirectX11 × SDL3 入力ガイド</div>
+      <h1>はじめて使う人のための <code>SdlPad</code> 取扱説明書</h1>
+      <p>DirectX11 の自作ゲームで、<strong>Xbox / PS4・PS5 / Nintendo Switch（プロコン・Joy-Con・Switch 2 プロコン）</strong>のコントローラーを同じ書き方で使えるようにする仕組みです。描画は DirectX11 のまま、入力の読み取りだけを SDL3 に任せています。</p>
+      <div class="badge-row">
+        <span class="badge">対応：Xbox / PS / Switch</span>
+        <span class="badge">開発環境：VS2022 / C++ / x64</span>
+        <span class="badge">SDL3 3.4.20 (VC)</span>
+        <span class="badge">zlib ライセンス（商用・配布OK）</span>
+      </div>
+    </header>
+
+    <!-- 1. 最短スタート -->
+    <section id="quickstart">
+      <h2><span class="sec-num">1</span>最短スタート（まずはここから）</h2>
+
+      <div class="callout ok">
+        <div class="callout-title">初期化や毎フレーム更新はもう終わっています！</div>
+        <p style="margin:0;"><code>Learn3dDirectX.cpp</code> と <code>Core/engine.cpp</code> に初期設定が組み込み済みです。自分のシーンやプレイヤー処理でコントローラーを使いたいときは、<strong>下の2ステップだけ</strong>で動きます。</p>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title"><span class="step-pill">1</span>ヘッダーを読み込む</div>
+          <p>使いたい <code>.cpp</code> ファイルの先頭に <code>#include "System/SdlPad.h"</code> を1行足します。</p>
+        </div>
+        <div class="card">
+          <div class="card-title"><span class="step-pill">2</span><code>SdlPad::</code> で入力を読む</div>
+          <p><code>SdlPad::Trigger(...)</code> や <code>SdlPad::Axis(...)</code> を書くだけで、どのメーカーのパッドでも反応します。</p>
+        </div>
+      </div>
+
+      <div class="code-wrap">
+        <div class="code-header">
+          <span>最小のサンプル（ジャンプと移動）</span>
+          <button class="copy-btn" type="button">コピー</button>
+        </div>
+        <pre><code>#include "System/SdlPad.h"     // ← これを入れるだけ
+#include "System/keyboard.h"   // キーボードも併用する場合
+
+void Player::Update()
+{
+    // 下ボタン（Xbox:A / PS:× / Switch:B）か スペースキーを押した瞬間にジャンプ
+    if (SdlPad::Trigger(SDL_GAMEPAD_BUTTON_SOUTH) || Keyboard_IsKeyTrigger(KK_SPACE))
+    {
+        Jump();
+    }
+
+    // 左スティックで移動（Xは右がプラス、Yは上をプラスにするためマイナスを付ける）
+    float moveX = SdlPad::Axis(SDL_GAMEPAD_AXIS_LEFTX);
+    float moveY = -SdlPad::Axis(SDL_GAMEPAD_AXIS_LEFTY);
+}</code></pre>
+      </div>
+
+      <p style="color:var(--text-muted);font-size:13.5px;">※ コントローラーが1台もつながっていない状態でもエラーにはならず、ボタンは常に <code>false</code>、スティックは <code>0.0f</code> を安全に返します。同時対応は1台で、遊んでいる最中に抜き差ししても自動で再認識・切り替えされます。</p>
+    </section>
+
+    <!-- 2. Press / Trigger / Release の違い -->
+    <section id="basics">
+      <h2><span class="sec-num">2</span>ボタン判定 3種類の使い分け</h2>
+      <p>ボタンを読み取る関数は <code>Press</code> / <code>Trigger</code> / <code>Release</code> の3種類あります。やりたいアクションに合わせて選んでください。</p>
+
+      <div class="grid-3">
+        <div class="card">
+          <div class="card-title"><code>Trigger(ボタン)</code></div>
+          <p><strong>押した瞬間（1フレームだけ）</strong>反応します。<br>用途：ジャンプ、決定、攻撃開始、ポーズ切り替え</p>
+        </div>
+        <div class="card">
+          <div class="card-title"><code>Press(ボタン)</code></div>
+          <p><strong>押している間ずっと</strong>反応します。<br>用途：ダッシュ、ガード、連射、十字キー移動</p>
+        </div>
+        <div class="card">
+          <div class="card-title"><code>Release(ボタン)</code></div>
+          <p><strong>離した瞬間（1フレームだけ）</strong>反応します。<br>用途：溜め攻撃を放つ、長押しキャンセル</p>
+        </div>
+      </div>
+
+      <h3>フレームごとの反応イメージ</h3>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>関数</th>
+              <th>1F：押していない</th>
+              <th>2F：押した！</th>
+              <th>3F：押しっぱなし</th>
+              <th>4F：押しっぱなし</th>
+              <th>5F：離した！</th>
+              <th>6F：押していない</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>SdlPad::Trigger(...)</code></td>
+              <td><span class="t-off">false</span></td>
+              <td><span class="t-on">true</span></td>
+              <td><span class="t-off">false</span></td>
+              <td><span class="t-off">false</span></td>
+              <td><span class="t-off">false</span></td>
+              <td><span class="t-off">false</span></td>
+            </tr>
+            <tr>
+              <td><code>SdlPad::Press(...)</code></td>
+              <td><span class="t-off">false</span></td>
+              <td><span class="t-on">true</span></td>
+              <td><span class="t-on">true</span></td>
+              <td><span class="t-on">true</span></td>
+              <td><span class="t-off">false</span></td>
+              <td><span class="t-off">false</span></td>
+            </tr>
+            <tr>
+              <td><code>SdlPad::Release(...)</code></td>
+              <td><span class="t-off">false</span></td>
+              <td><span class="t-off">false</span></td>
+              <td><span class="t-off">false</span></td>
+              <td><span class="t-off">false</span></td>
+              <td><span class="t-on">true</span></td>
+              <td><span class="t-off">false</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 3. インタラクティブ ボタン・軸マップ -->
+    <section id="padmap">
+      <h2><span class="sec-num">3</span>ボタン・軸マップ（クリックで定数名を確認）</h2>
+      <p>SDL3 では、ボタンに書いてある文字（A/B や ○/×）ではなく<strong>物理的な位置（上・下・左・右）</strong>で名前が決まっています。たとえば「下にあるボタン」は Xbox・PS・Switch のどれを繋いでも <code>SDL_GAMEPAD_BUTTON_SOUTH</code> です。</p>
+
+      <div class="pad-panel">
+        <div class="pad-toolbar">
+          <div class="pad-tabs" role="tablist" aria-label="コントローラー表記切替">
+            <button class="pad-tab active" type="button" data-ctrl="xbox">Xbox 表記</button>
+            <button class="pad-tab" type="button" data-ctrl="ps">PS4 / PS5 表記</button>
+            <button class="pad-tab" type="button" data-ctrl="sw">Switch 表記</button>
+          </div>
+          <span class="pad-hint">図のボタンやスティックをクリックすると下にコードが出ます</span>
+        </div>
+
+        <div class="pad-svg-box">
+          <svg viewBox="0 0 680 330" xmlns="http://www.w3.org/2000/svg" aria-label="コントローラー対応図">
+            <!-- Body silhouette -->
+            <path d="M 165 82 C 125 82, 96 112, 82 162 L 62 246 C 55 274, 72 298, 98 298 C 122 298, 138 280, 152 252 L 176 226 C 188 214, 206 212, 224 212 L 456 212 C 474 212, 492 214, 504 226 L 528 252 C 542 280, 558 298, 582 298 C 608 298, 625 274, 618 246 L 598 162 C 584 112, 555 82, 515 82 Z"
+                  fill="var(--surface-2)" stroke="var(--border)" stroke-width="3"/>
+
+            <!-- Triggers (LT / RT) -->
+            <g class="pad-hit" data-id="LT">
+              <rect class="hit-shape" x="128" y="14" width="94" height="28" rx="8" fill="#6366f1" fill-opacity="0.2" stroke="#6366f1" stroke-width="2"/>
+              <text x="175" y="33" text-anchor="middle" font-size="13" font-weight="700" fill="var(--text)" data-label="LT">LT (軸)</text>
+            </g>
+            <g class="pad-hit" data-id="RT">
+              <rect class="hit-shape" x="458" y="14" width="94" height="28" rx="8" fill="#6366f1" fill-opacity="0.2" stroke="#6366f1" stroke-width="2"/>
+              <text x="505" y="33" text-anchor="middle" font-size="13" font-weight="700" fill="var(--text)" data-label="RT">RT (軸)</text>
+            </g>
+
+            <!-- Shoulders (LB / RB) -->
+            <g class="pad-hit" data-id="LB">
+              <rect class="hit-shape" x="128" y="48" width="94" height="26" rx="8" fill="#3b82f6" fill-opacity="0.2" stroke="#3b82f6" stroke-width="2"/>
+              <text x="175" y="66" text-anchor="middle" font-size="13" font-weight="700" fill="var(--text)" data-label="LB">LB</text>
+            </g>
+            <g class="pad-hit" data-id="RB">
+              <rect class="hit-shape" x="458" y="48" width="94" height="26" rx="8" fill="#3b82f6" fill-opacity="0.2" stroke="#3b82f6" stroke-width="2"/>
+              <text x="505" y="66" text-anchor="middle" font-size="13" font-weight="700" fill="var(--text)" data-label="RB">RB</text>
+            </g>
+
+            <!-- Center buttons (BACK / START) -->
+            <g class="pad-hit" data-id="BACK">
+              <rect class="hit-shape" x="266" y="128" width="60" height="26" rx="13" fill="var(--surface)" stroke="var(--text-muted)" stroke-width="2"/>
+              <text x="296" y="145" text-anchor="middle" font-size="11.5" font-weight="700" fill="var(--text)" data-label="BACK">View</text>
+            </g>
+            <g class="pad-hit" data-id="START">
+              <rect class="hit-shape" x="354" y="128" width="60" height="26" rx="13" fill="var(--surface)" stroke="var(--text-muted)" stroke-width="2"/>
+              <text x="384" y="145" text-anchor="middle" font-size="11.5" font-weight="700" fill="var(--text)" data-label="START">Menu</text>
+            </g>
+
+            <!-- D-Pad -->
+            <g class="pad-hit" data-id="DPAD">
+              <path class="hit-shape" d="M 164 118 H 192 V 142 H 216 V 170 H 192 V 194 H 164 V 170 H 140 V 142 H 164 Z"
+                    fill="var(--surface)" stroke="var(--text-muted)" stroke-width="2"/>
+              <text x="178" y="160" text-anchor="middle" font-size="11" font-weight="700" fill="var(--text)">十字</text>
+            </g>
+
+            <!-- Left Stick -->
+            <g class="pad-hit" data-id="LSTICK">
+              <circle class="hit-shape" cx="246" cy="212" r="34" fill="#0ea5e9" fill-opacity="0.18" stroke="#0ea5e9" stroke-width="2.5"/>
+              <text x="246" y="209" text-anchor="middle" font-size="12" font-weight="700" fill="var(--text)">左スティック</text>
+              <text x="246" y="225" text-anchor="middle" font-size="10.5" fill="var(--text-muted)" data-label="LS">押込: LS</text>
+            </g>
+
+            <!-- Right Stick -->
+            <g class="pad-hit" data-id="RSTICK">
+              <circle class="hit-shape" cx="434" cy="212" r="34" fill="#0ea5e9" fill-opacity="0.18" stroke="#0ea5e9" stroke-width="2.5"/>
+              <text x="434" y="209" text-anchor="middle" font-size="12" font-weight="700" fill="var(--text)">右スティック</text>
+              <text x="434" y="225" text-anchor="middle" font-size="10.5" fill="var(--text-muted)" data-label="RS">押込: RS</text>
+            </g>
+
+            <!-- Face Buttons: NORTH, SOUTH, WEST, EAST -->
+            <g class="pad-hit" data-id="NORTH">
+              <circle class="hit-shape" cx="502" cy="116" r="20" fill="#eab308" fill-opacity="0.22" stroke="#eab308" stroke-width="2.2"/>
+              <text x="502" y="121" text-anchor="middle" font-size="15" font-weight="800" fill="var(--text)" data-label="NORTH">Y</text>
+            </g>
+            <g class="pad-hit selected" data-id="SOUTH">
+              <circle class="hit-shape" cx="502" cy="188" r="20" fill="#22c55e" fill-opacity="0.24" stroke="#22c55e" stroke-width="2.2"/>
+              <text x="502" y="193" text-anchor="middle" font-size="15" font-weight="800" fill="var(--text)" data-label="SOUTH">A</text>
+            </g>
+            <g class="pad-hit" data-id="WEST">
+              <circle class="hit-shape" cx="466" cy="152" r="20" fill="#3b82f6" fill-opacity="0.22" stroke="#3b82f6" stroke-width="2.2"/>
+              <text x="466" y="157" text-anchor="middle" font-size="15" font-weight="800" fill="var(--text)" data-label="WEST">X</text>
+            </g>
+            <g class="pad-hit" data-id="EAST">
+              <circle class="hit-shape" cx="538" cy="152" r="20" fill="#ef4444" fill-opacity="0.22" stroke="#ef4444" stroke-width="2.2"/>
+              <text x="538" y="157" text-anchor="middle" font-size="15" font-weight="800" fill="var(--text)" data-label="EAST">B</text>
+            </g>
+
+            <!-- Position helper captions -->
+            <text x="502" y="90" text-anchor="middle" font-size="10.5" fill="var(--text-muted)">NORTH (上)</text>
+            <text x="502" y="222" text-anchor="middle" font-size="10.5" fill="var(--text-muted)">SOUTH (下)</text>
+            <text x="430" y="156" text-anchor="end" font-size="10.5" fill="var(--text-muted)">WEST (左)</text>
+            <text x="565" y="156" text-anchor="start" font-size="10.5" fill="var(--text-muted)">EAST (右)</text>
+          </svg>
+        </div>
+
+        <div class="pad-inspector" id="padInspector">
+          <div class="pad-inspector-meta">
+            <div class="pad-inspector-name" id="inspName">下ボタン（Xbox: A / PS: × / Switch: B）</div>
+            <div class="pad-inspector-code" id="inspCode">SdlPad::Trigger(SDL_GAMEPAD_BUTTON_SOUTH)</div>
+            <div class="pad-inspector-desc" id="inspDesc">ジャンプや決定などによく使われる右側・下のボタンです。</div>
+          </div>
+          <button class="btn primary" id="inspCopy" type="button">このコードをコピー</button>
+        </div>
+      </div>
+
+      <h3>スティックの向き（Y軸だけ上下に注意！）</h3>
+      <div class="axis-box">
+        <div class="axis-diagram">
+          <svg viewBox="0 0 180 150" width="180" height="150" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="90" cy="75" r="46" fill="var(--surface-2)" stroke="var(--border)" stroke-width="2"/>
+            <circle cx="90" cy="75" r="14" fill="#f59e0b" fill-opacity="0.25" stroke="#f59e0b" stroke-dasharray="3,2"/>
+            <line x1="90" y1="22" x2="90" y2="128" stroke="var(--text-muted)" stroke-width="1.5"/>
+            <line x1="36" y1="75" x2="144" y2="75" stroke="var(--text-muted)" stroke-width="1.5"/>
+            <text x="90" y="14" text-anchor="middle" font-size="11.5" font-weight="700" fill="#ef4444">上：-1.0</text>
+            <text x="90" y="144" text-anchor="middle" font-size="11.5" font-weight="700" fill="#2563eb">下：+1.0</text>
+            <text x="6" y="79" text-anchor="start" font-size="11" font-weight="700" fill="var(--text)">左 -1</text>
+            <text x="174" y="79" text-anchor="end" font-size="11" font-weight="700" fill="var(--text)">右 +1</text>
+          </svg>
+        </div>
+        <div class="axis-text">
+          <p><strong>1. デッドゾーンは自動処理済み</strong>：真ん中のオレンジ円（倒し具合 20% 未満）は自動で <code>0.0f</code> になるため、スティックの微ブレ対策は不要です。20%～100% の範囲は滑らかに <code>0.0f ～ 1.0f</code> へ引き伸ばされます。</p>
+          <p style="margin-bottom:0;"><strong>2. 上方向をプラスにしたいときはマイナスを付ける</strong>：SDL3 の仕様上、スティックを<strong>下に倒すとプラス</strong>になります。3Dゲームの「前進＝プラス」や 2Dの「上＝プラス」にしたい場合は <code>-SdlPad::Axis(SDL_GAMEPAD_AXIS_LEFTY)</code> と書きます。</p>
+        </div>
+      </div>
+
+      <details>
+        <summary>ボタン・軸の完全対応表を一覧で見る</summary>
+        <div class="details-body">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>SDL3 定数名</th>
+                  <th>場所・種類</th>
+                  <th class="ctrl-xbox">Xbox</th>
+                  <th class="ctrl-ps">PS4 / PS5</th>
+                  <th class="ctrl-sw">Switch</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td><code>SDL_GAMEPAD_BUTTON_SOUTH</code></td><td>右側・下</td><td>A</td><td>×</td><td>B</td></tr>
+                <tr><td><code>SDL_GAMEPAD_BUTTON_EAST</code></td><td>右側・右</td><td>B</td><td>○</td><td>A</td></tr>
+                <tr><td><code>SDL_GAMEPAD_BUTTON_WEST</code></td><td>右側・左</td><td>X</td><td>□</td><td>Y</td></tr>
+                <tr><td><code>SDL_GAMEPAD_BUTTON_NORTH</code></td><td>右側・上</td><td>Y</td><td>△</td><td>X</td></tr>
+                <tr><td><code>SDL_GAMEPAD_BUTTON_LEFT_SHOULDER</code></td><td>左上肩</td><td>LB</td><td>L1</td><td>L</td></tr>
+                <tr><td><code>SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER</code></td><td>右上肩</td><td>RB</td><td>R1</td><td>R</td></tr>
+                <tr><td><code>SDL_GAMEPAD_BUTTON_START</code></td><td>右中央</td><td>Menu</td><td>Options</td><td>＋</td></tr>
+                <tr><td><code>SDL_GAMEPAD_BUTTON_BACK</code></td><td>左中央</td><td>View</td><td>Share / Create</td><td>－</td></tr>
+                <tr><td><code>SDL_GAMEPAD_BUTTON_DPAD_UP</code> / <code>DOWN</code> / <code>LEFT</code> / <code>RIGHT</code></td><td>十字キー</td><td>方向パッド</td><td>方向キー</td><td>十字ボタン</td></tr>
+                <tr><td><code>SDL_GAMEPAD_BUTTON_LEFT_STICK</code> / <code>RIGHT_STICK</code></td><td>スティック押込</td><td>LS / RS</td><td>L3 / R3</td><td>L / R 押込</td></tr>
+                <tr><td><code>SDL_GAMEPAD_AXIS_LEFTX</code> / <code>LEFTY</code></td><td>軸 (-1～1)</td><td>左スティック</td><td>左スティック</td><td>左スティック</td></tr>
+                <tr><td><code>SDL_GAMEPAD_AXIS_RIGHTX</code> / <code>RIGHTY</code></td><td>軸 (-1～1)</td><td>右スティック</td><td>右スティック</td><td>右スティック</td></tr>
+                <tr><td><code>SDL_GAMEPAD_AXIS_LEFT_TRIGGER</code></td><td>軸 (0～1)</td><td>LT</td><td>L2</td><td>ZL</td></tr>
+                <tr><td><code>SDL_GAMEPAD_AXIS_RIGHT_TRIGGER</code></td><td>軸 (0～1)</td><td>RT</td><td>R2</td><td>ZR</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </details>
+    </section>
+
+    <!-- 4. やりたいこと逆引きレシピ -->
+    <section id="recipes">
+      <h2><span class="sec-num">4</span>やりたいこと逆引きレシピ（コピペOK）</h2>
+      <p>実際のゲーム作りでよく使うパターンをそのままコピーできるようにまとめました。</p>
+
+      <div class="recipe">
+        <div class="recipe-head">
+          <span class="recipe-tag">基本</span>
+          <span class="recipe-title">キーボードとコントローラーの両方でジャンプできるようにする</span>
+        </div>
+        <p><code>||</code>（または）でつなぐだけで、コントローラー未接続のPCでもキーボードで遊べます。</p>
+        <div class="code-wrap">
+          <div class="code-header"><span>C++</span><button class="copy-btn" type="button">コピー</button></div>
+          <pre><code>if (SdlPad::Trigger(SDL_GAMEPAD_BUTTON_SOUTH) || Keyboard_IsKeyTrigger(KK_SPACE))
+{
+    Jump();
+}</code></pre>
+        </div>
+      </div>
+
+      <div class="recipe">
+        <div class="recipe-head">
+          <span class="recipe-tag">移動</span>
+          <span class="recipe-title">左スティックと WASD キーの両方で移動する</span>
+        </div>
+        <p>スティック値にキーボード入力を足し合わせます（斜め移動が速くならないよう、必要なら長さを1に丸めてください）。</p>
+        <div class="code-wrap">
+          <div class="code-header"><span>C++</span><button class="copy-btn" type="button">コピー</button></div>
+          <pre><code>float moveX = SdlPad::Axis(SDL_GAMEPAD_AXIS_LEFTX);
+float moveZ = -SdlPad::Axis(SDL_GAMEPAD_AXIS_LEFTY); // 前進をプラスにするため反転
+
+if (Keyboard_IsKeyDown(KK_D)) moveX += 1.0f;
+if (Keyboard_IsKeyDown(KK_A)) moveX -= 1.0f;
+if (Keyboard_IsKeyDown(KK_W)) moveZ += 1.0f;
+if (Keyboard_IsKeyDown(KK_S)) moveZ -= 1.0f;</code></pre>
+        </div>
+      </div>
+
+      <div class="recipe">
+        <div class="recipe-head">
+          <span class="recipe-tag">トリガー</span>
+          <span class="recipe-title">LT / RT（L2 / R2 / ZL / ZR）をボタン代わりに使う</span>
+        </div>
+        <p>トリガーはボタンではなく「押し込み量（<code>0.0f ～ 1.0f</code>）」の軸として返ります。半分以上押し込んだら発動する例です。</p>
+        <div class="code-wrap">
+          <div class="code-header"><span>C++</span><button class="copy-btn" type="button">コピー</button></div>
+          <pre><code>float rt = SdlPad::Axis(SDL_GAMEPAD_AXIS_RIGHT_TRIGGER);
+if (rt > 0.5f)
+{
+    FireWeapon();
+}</code></pre>
+        </div>
+      </div>
+
+      <div class="recipe">
+        <div class="recipe-head">
+          <span class="recipe-tag">演出</span>
+          <span class="recipe-title">ダメージを受けたときにコントローラーを振動させる</span>
+        </div>
+        <p><code>Rumble(重い振動 0～1, 軽い振動 0～1, 時間ミリ秒)</code> を呼びます。振動を途中で止めたいときは <code>Rumble(0, 0, 0)</code> です。</p>
+        <div class="code-wrap">
+          <div class="code-header"><span>C++</span><button class="copy-btn" type="button">コピー</button></div>
+          <pre><code>// 強めの振動を 0.25秒（250ms）鳴らす
+SdlPad::Rumble(0.8f, 0.3f, 250);</code></pre>
+        </div>
+      </div>
+
+      <div class="recipe">
+        <div class="recipe-head">
+          <span class="recipe-tag">UI表示</span>
+          <span class="recipe-title">つながっている機種（PS / Switch / Xbox）を調べる</span>
+        </div>
+        <p>画面に「×ボタンで決定」「Aボタンで決定」などのガイドを出し分けたいときに使います。</p>
+        <div class="code-wrap">
+          <div class="code-header"><span>C++</span><button class="copy-btn" type="button">コピー</button></div>
+          <pre><code>if (SdlPad::IsConnected())
+{
+    switch (SdlPad::Type())
+    {
+    case SDL_GAMEPAD_TYPE_PS4:
+    case SDL_GAMEPAD_TYPE_PS5:
+        // PlayStation 用のアイコンを表示
+        break;
+    case SDL_GAMEPAD_TYPE_NINTENDO_SWITCH_PRO:
+    case SDL_GAMEPAD_TYPE_NINTENDO_SWITCH_JOYCON_PAIR:
+        // Switch 用のアイコンを表示
+        break;
+    default:
+        // Xbox 用のアイコンを表示
+        break;
+    }
+}</code></pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. 絶対に守るルール・よくあるミス -->
+    <section id="rules">
+      <h2><span class="sec-num">5</span>絶対に守るルール・よくあるミス</h2>
+
+      <div class="callout danger">
+        <div class="callout-title">ルール1：SdlPad::Update() は自分で呼ばない！</div>
+        <p style="margin:0;"><code>SdlPad::Update()</code> はすでに <code>Core/engine.cpp</code> の 60FPS ループ内で1回だけ呼ばれています。自分のシーンやクラスでもう一度呼んでしまうと、「前のフレームの記憶」が上書きされて <strong><code>Trigger()</code> と <code>Release()</code> が一切反応しなくなります</strong>。</p>
+      </div>
+
+      <div class="callout warn">
+        <div class="callout-title">ルール2：テスト前に裏のコントローラー変換ソフトを終了する</div>
+        <p style="margin:0;"><strong>DS4Windows / BetterJoy / x360ce / Steam（Steam Input）</strong>が起動していると、SDL3 と入力がぶつかってボタンが2回押されたり反応しなくなったりします。動作テストの前はこれらを閉じてください。</p>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">Switch 2 プロコンの接続方法</div>
+          <p>Switch 2 Proコントローラーを使う場合は、無線ではなく <strong>USB 有線接続</strong> にしてください。</p>
+        </div>
+        <div class="card">
+          <div class="card-title">初期化・終了の呼び出し場所</div>
+          <p><code>Init()</code> は <code>Learn3dDirectX.cpp</code> の DirectX 初期化後、<code>Shutdown()</code> はメインループ終了後に配置済みなので動かさないでください。</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6. 全関数一覧 -->
+    <section id="api">
+      <h2><span class="sec-num">6</span>全関数（API）一覧リファレンス</h2>
+      <p>すべて <code>static</code> メソッドなので、変数を作らずそのまま <code>SdlPad::〜</code> と書きます。</p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>関数</th>
+              <th>戻り値</th>
+              <th>役割</th>
+              <th>呼ぶ場所</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>SdlPad::Press(b)</code></td>
+              <td><code>bool</code></td>
+              <td>ボタン <code>b</code> を押している間 <code>true</code></td>
+              <td>任意の更新処理</td>
+            </tr>
+            <tr>
+              <td><code>SdlPad::Trigger(b)</code></td>
+              <td><code>bool</code></td>
+              <td>ボタン <code>b</code> を押した瞬間だけ <code>true</code></td>
+              <td>任意の更新処理</td>
+            </tr>
+            <tr>
+              <td><code>SdlPad::Release(b)</code></td>
+              <td><code>bool</code></td>
+              <td>ボタン <code>b</code> を離した瞬間だけ <code>true</code></td>
+              <td>任意の更新処理</td>
+            </tr>
+            <tr>
+              <td><code>SdlPad::Axis(a)</code></td>
+              <td><code>float</code></td>
+              <td>スティック（<code>-1～1</code>）／トリガー（<code>0～1</code>）を取得（デッドゾーン 20%）</td>
+              <td>任意の更新処理</td>
+            </tr>
+            <tr>
+              <td><code>SdlPad::Rumble(low, high, ms)</code></td>
+              <td><code>void</code></td>
+              <td>低周波 <code>low</code>・高周波 <code>high</code>（各 <code>0～1</code>）で <code>ms</code> ミリ秒振動</td>
+              <td>任意の更新処理</td>
+            </tr>
+            <tr>
+              <td><code>SdlPad::IsConnected()</code></td>
+              <td><code>bool</code></td>
+              <td>現在コントローラーが1台つながっているか</td>
+              <td>任意の処理</td>
+            </tr>
+            <tr>
+              <td><code>SdlPad::Type()</code></td>
+              <td><code>SDL_GamepadType</code></td>
+              <td>接続中の機種（未接続時は <code>SDL_GAMEPAD_TYPE_UNKNOWN</code>）</td>
+              <td>任意の処理</td>
+            </tr>
+            <tr>
+              <td><code>SdlPad::Init()</code></td>
+              <td><code>bool</code></td>
+              <td>SDL3 ゲームパッド機能の初期化（組み込み済み）</td>
+              <td><code>WinMain</code> のみ</td>
+            </tr>
+            <tr>
+              <td><code>SdlPad::Update()</code></td>
+              <td><code>void</code></td>
+              <td>着脱監視とボタン状態更新（組み込み済み）</td>
+              <td><code>Engine::Run</code> のみ</td>
+            </tr>
+            <tr>
+              <td><code>SdlPad::Shutdown()</code></td>
+              <td><code>void</code></td>
+              <td>終了・解放処理（組み込み済み）</td>
+              <td><code>WinMain</code> のみ</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 7. ファイル構成とビルド設定 -->
+    <section id="setup">
+      <h2><span class="sec-num">7</span>ファイル構成とビルド設定（管理・セットアップ担当向け）</h2>
+      <p>ここから先は、プロジェクトのビルド設定を確認・修正したい人向けの情報です。</p>
+
+      <h3>フォルダー構成</h3>
+      <div class="code-wrap">
+        <div class="code-header"><span>MyGame フォルダー構造</span></div>
+        <pre><code>MyGame\
+├─ MyGame.sln
+├─ Directory.Build.targets         ← SDL3のパス設定・SDL3.dll自動コピー
+├─ SDL3\                           ← SDL3-devel-3.4.20-VC.zip を展開して配置
+│   ├─ include\SDL3\SDL.h
+│   └─ lib\x64\SDL3.lib, SDL3.dll
+└─ MyGame\                         ← .vcxproj があるフォルダー
+    ├─ Learn3dDirectX.cpp          ← WinMain（SdlPad::Init / Shutdown）
+    ├─ Core\engine.cpp             ← メインループ（SdlPad::Update）
+    └─ System\
+        ├─ SdlPad.h / SdlPad.cpp   ← ゲームパッド入力クラス本体
+        ├─ keyboard.h              ← 既存のキーボード入力
+        └─ renderer.h              ← DirectX11 描画管理</code></pre>
+      </div>
+
+      <h3><code>Directory.Build.targets</code> について</h3>
+      <p>Visual Studio のプロパティ画面に毎回手入力しなくても済むように、ソリューション直下の <code>Directory.Build.targets</code> に設定をまとめています（<code>.props</code> だと <code>.vcxproj</code> 側に上書きされるため <code>.targets</code> を採用しています）。</p>
+      <ul>
+        <li><code>SDL3\include</code> と <code>/utf-8</code> オプションをコンパイラへ自動追加</li>
+        <li><code>SDL3\lib\x64</code> と <code>SDL3.lib</code> をリンカーへ自動追加</li>
+        <li>ビルド前に <code>SDL.h</code> が存在するかチェックし、無ければ警告を表示</li>
+        <li>ビルド後に <code>SDL3.dll</code> を実行フォルダーへ自動コピー（変更がない場合はスキップし、<code>xcopy</code> による VS フリーズを回避）</li>
+      </ul>
+
+      <h3>現在の引き継ぎ確認チェックリスト（<code>.targets</code> 移行後）</h3>
+      <p><code>Directory.Build.targets</code> へ変更した後のビルド確認がまだの場合は、上から順にチェックしてください（チェック状態はブラウザに保存されます）。</p>
+      <ul class="checklist" id="migrationChecklist">
+        <li>
+          <input type="checkbox" id="c1">
+          <label for="c1">Visual Studio 上部のプラットフォームが <strong>x64</strong> になっていることを確認する。</label>
+        </li>
+        <li>
+          <input type="checkbox" id="c2">
+          <label for="c2">Visual Studio を一度閉じてソリューションを開き直す（<code>Directory.Build.targets</code> を確実に反映させるため）。</label>
+        </li>
+        <li>
+          <input type="checkbox" id="c3">
+          <label for="c3">メニューの <strong>ビルド → ソリューションのリビルド</strong> を実行し、エラーなく通るか確認する。</label>
+        </li>
+        <li>
+          <input type="checkbox" id="c4">
+          <label for="c4">プロジェクトのプロパティ（構成：<strong>すべての構成</strong> / プラットフォーム：<strong>x64</strong>）を開き、以前手入力した SDL3 関連の記述（インクルード、<code>/utf-8</code>、ライブラリディレクトリ、<code>SDL3.lib</code>、ビルド後イベントの <code>copy</code>）が残っていれば削除する。</label>
+        </li>
+        <li>
+          <input type="checkbox" id="c5">
+          <label for="c5">手入力設定を消した状態で再度リビルドし、成功すること・出力フォルダー（<code>$(OutDir)</code>）に <code>SDL3.dll</code> があることを確認する。</label>
+        </li>
+      </ul>
+    </section>
+
+    <!-- 8. 困ったときの対処法 -->
+    <section id="troubleshoot">
+      <h2><span class="sec-num">8</span>困ったときの対処法（トラブルシューティング）</h2>
+
+      <details open>
+        <summary>Q. ビルド時に「C1083: include ファイルを開けません。'SDL3/SDL.h'」が出る</summary>
+        <div class="details-body">
+          <ol>
+            <li>出力ウィンドウに <code>[SDL3] SDL.h not found: ...</code> の警告が出ていないか確認します。出ていれば、<code>MyGame\SDL3\include\SDL3\SDL.h</code> の階層がずれています。</li>
+            <li>プロジェクトのプロパティ → <strong>C/C++ → 全般 → 追加のインクルードディレクトリ</strong> → プルダウンの「編集」を開き、下部の「評価された値」に <code>...\SDL3\include</code> が入っているか確認します。</li>
+            <li>入っていなければ、<code>Directory.Build.targets</code> が <code>MyGame.sln</code> と同じ場所にあるか、ファイル名に <code>.txt</code> が付いていないか確認します。</li>
+            <li>すぐ動く状態に戻したい場合は、<code>Directory.Build.targets</code> の名前を <code>Directory.Build.targets.bak</code> などに変えて無効化し、下の「手入力設定への復旧表」をプロパティへ入力してください。</li>
+          </ol>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>プロパティの場所（すべての構成 / x64・既存値の先頭に追加）</th>
+                  <th>設定する値</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td>C/C++ → 全般 → 追加のインクルードディレクトリ</td><td><code>$(SolutionDir)SDL3\include;</code></td></tr>
+                <tr><td>C/C++ → コマンドライン → 追加のオプション</td><td><code>/utf-8</code></td></tr>
+                <tr><td>リンカー → 全般 → 追加のライブラリディレクトリ</td><td><code>$(SolutionDir)SDL3\lib\x64;</code></td></tr>
+                <tr><td>リンカー → 入力 → 追加の依存ファイル</td><td><code>SDL3.lib;</code></td></tr>
+                <tr><td>ビルドイベント → ビルド後のイベント → コマンドライン</td><td><code>copy /y "$(SolutionDir)SDL3\lib\x64\SDL3.dll" "$(OutDir)SDL3.dll"</code></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </details>
+
+      <details>
+        <summary>Q. 起動時に「SDL3.dll が見つからない」と表示される</summary>
+        <div class="details-body">
+          <p><code>SDL3\lib\x64\SDL3.dll</code> を、ビルドされた <code>.exe</code> と同じフォルダーにコピーしてください。通常は <code>Directory.Build.targets</code> のビルド後処理で自動コピーされます。</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>Q. コントローラーが反応しない・ボタンが二重に反応する</summary>
+        <div class="details-body">
+          <ol>
+            <li>DS4Windows / BetterJoy / x360ce / Steam（Steam Input）をすべて終了してからゲームを再起動してください。</li>
+            <li>Switch 2 Proコントローラーを使っている場合は、USB ケーブルで有線接続してください。</li>
+            <li><code>Trigger()</code> だけ効かない場合は、<code>Core/engine.cpp</code> 以外で <code>SdlPad::Update()</code> を呼んでいないか検索してください。</li>
+          </ol>
+        </div>
+      </details>
+    </section>
+
+    <!-- 9. ソースコード全文 -->
+    <section id="source">
+      <h2><span class="sec-num">9</span>ソースコード全文（クリックで展開）</h2>
+      <p>現在の実装内容を確認したり、別プロジェクトへ移植したりするときに使えます。</p>
+
+      <details>
+        <summary>Directory.Build.targets</summary>
+        <div class="details-body">
+          <div class="code-wrap">
+            <div class="code-header"><span>MyGame\Directory.Build.targets</span><button class="copy-btn" type="button">コピー</button></div>
+            <pre><code>&lt;Project&gt;
+  &lt;PropertyGroup&gt;
+    &lt;SdlRoot&gt;$(MSBuildThisFileDirectory)SDL3\&lt;/SdlRoot&gt;
+    &lt;SdlArch Condition="'$(Platform)' == 'x64'"&gt;x64&lt;/SdlArch&gt;
+    &lt;SdlArch Condition="'$(Platform)' != 'x64'"&gt;x86&lt;/SdlArch&gt;
+  &lt;/PropertyGroup&gt;
+
+  &lt;ItemDefinitionGroup&gt;
+    &lt;ClCompile&gt;
+      &lt;AdditionalIncludeDirectories&gt;$(SdlRoot)include;%(AdditionalIncludeDirectories)&lt;/AdditionalIncludeDirectories&gt;
+      &lt;AdditionalOptions&gt;/utf-8 %(AdditionalOptions)&lt;/AdditionalOptions&gt;
+    &lt;/ClCompile&gt;
+    &lt;Link&gt;
+      &lt;AdditionalLibraryDirectories&gt;$(SdlRoot)lib\$(SdlArch);%(AdditionalLibraryDirectories)&lt;/AdditionalLibraryDirectories&gt;
+      &lt;AdditionalDependencies&gt;SDL3.lib;%(AdditionalDependencies)&lt;/AdditionalDependencies&gt;
+    &lt;/Link&gt;
+  &lt;/ItemDefinitionGroup&gt;
+
+  &lt;Target Name="SdlCheck" BeforeTargets="ClCompile"&gt;
+    &lt;Warning Condition="!Exists('$(SdlRoot)include\SDL3\SDL.h')" Text="[SDL3] SDL.h not found: $(SdlRoot)include\SDL3\SDL.h" /&gt;
+  &lt;/Target&gt;
+
+  &lt;Target Name="CopySdl3Dll" AfterTargets="Build"&gt;
+    &lt;Copy SourceFiles="$(SdlRoot)lib\$(SdlArch)\SDL3.dll" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" /&gt;
+  &lt;/Target&gt;
+&lt;/Project&gt;</code></pre>
+          </div>
+        </div>
+      </details>
+
+      <details>
+        <summary>System/SdlPad.h</summary>
+        <div class="details-body">
+          <div class="code-wrap">
+            <div class="code-header"><span>MyGame\System\SdlPad.h</span><button class="copy-btn" type="button">コピー</button></div>
+            <pre><code>#pragma once
+#include &lt;SDL3/SDL.h&gt;
+
+// SDL3を入力専用で使うゲームパッドクラス（描画はDirectXのまま）
+class SdlPad {
+public:
+    static bool Init();
+    static void Shutdown();
+    static void Update();   // 毎フレーム1回呼ぶ
+    static bool IsConnected() { return s_pad != nullptr; }
+    static bool Press(SDL_GamepadButton b)   { return Valid(b) &amp;&amp; s_now[b]; }                // 押している間
+    static bool Trigger(SDL_GamepadButton b) { return Valid(b) &amp;&amp; s_now[b] &amp;&amp; !s_prev[b]; }  // 押した瞬間
+    static bool Release(SDL_GamepadButton b) { return Valid(b) &amp;&amp; !s_now[b] &amp;&amp; s_prev[b]; }  // 離した瞬間
+    static float Axis(SDL_GamepadAxis a);    // スティック -1～1 / トリガー 0～1
+    static void Rumble(float low, float high, Uint32 ms); // 強さ 0～1
+    static SDL_GamepadType Type();           // 機種の判定
+private:
+    static bool Valid(SDL_GamepadButton b) { return b &gt;= 0 &amp;&amp; b &lt; SDL_GAMEPAD_BUTTON_COUNT; }
+    static void OpenFirst();
+    static SDL_Gamepad* s_pad;
+    static bool s_now[SDL_GAMEPAD_BUTTON_COUNT];
+    static bool s_prev[SDL_GAMEPAD_BUTTON_COUNT];
+};</code></pre>
+          </div>
+        </div>
+      </details>
+
+      <details>
+        <summary>System/SdlPad.cpp</summary>
+        <div class="details-body">
+          <div class="code-wrap">
+            <div class="code-header"><span>MyGame\System\SdlPad.cpp</span><button class="copy-btn" type="button">コピー</button></div>
+            <pre><code>#include "SdlPad.h"
+#include &lt;cstring&gt;
+
+SDL_Gamepad* SdlPad::s_pad = nullptr;
+bool SdlPad::s_now[SDL_GAMEPAD_BUTTON_COUNT] = {};
+bool SdlPad::s_prev[SDL_GAMEPAD_BUTTON_COUNT] = {};
+static const float kDeadZone = 0.2f;
+
+bool SdlPad::Init() {
+    SDL_SetHint(SDL_HINT_JOYSTICK_THREAD, "1");                  // Win32ウィンドウで使うため
+    SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "1");
+    if (!SDL_Init(SDL_INIT_GAMEPAD)) {
+        SDL_Log("SDL_Init failed: %s", SDL_GetError());
+        return false;
+    }
+    OpenFirst();
+    return true;
+}
+
+void SdlPad::Shutdown() {
+    if (s_pad) { SDL_CloseGamepad(s_pad); s_pad = nullptr; }
+    SDL_Quit();
+}
+
+// 接続中のパッドのうち最初の1台を開く
+void SdlPad::OpenFirst() {
+    int count = 0;
+    SDL_JoystickID* ids = SDL_GetGamepads(&amp;count);
+    if (ids) {
+        if (count &gt; 0) s_pad = SDL_OpenGamepad(ids[0]);
+        SDL_free(ids);
+    }
+}
+
+void SdlPad::Update() {
+    SDL_Event e;
+    while (SDL_PollEvent(&amp;e)) {
+        if (e.type == SDL_EVENT_GAMEPAD_ADDED &amp;&amp; !s_pad) {
+            s_pad = SDL_OpenGamepad(e.gdevice.which);
+        } else if (e.type == SDL_EVENT_GAMEPAD_REMOVED &amp;&amp; s_pad &amp;&amp;
+                   SDL_GetGamepadID(s_pad) == e.gdevice.which) {
+            SDL_CloseGamepad(s_pad);
+            s_pad = nullptr;
+            OpenFirst();   // ほかにつながっていれば切り替え
+        }
+    }
+    std::memcpy(s_prev, s_now, sizeof(s_now));
+    for (int i = 0; i &lt; SDL_GAMEPAD_BUTTON_COUNT; ++i)
+        s_now[i] = s_pad &amp;&amp; SDL_GetGamepadButton(s_pad, (SDL_GamepadButton)i);
+}
+
+float SdlPad::Axis(SDL_GamepadAxis a) {
+    if (!s_pad) return 0.0f;
+    float v = SDL_GetGamepadAxis(s_pad, a) / 32767.0f;
+    v = SDL_clamp(v, -1.0f, 1.0f);
+    float mag = SDL_fabsf(v);
+    if (mag &lt; kDeadZone) return 0.0f;
+    float out = (mag - kDeadZone) / (1.0f - kDeadZone);  // デッドゾーン外を0～1に詰め直す
+    return v &lt; 0.0f ? -out : out;
+}
+
+void SdlPad::Rumble(float low, float high, Uint32 ms) {
+    if (!s_pad) return;
+    low  = SDL_clamp(low,  0.0f, 1.0f);
+    high = SDL_clamp(high, 0.0f, 1.0f);
+    SDL_RumbleGamepad(s_pad, (Uint16)(low * 0xFFFF), (Uint16)(high * 0xFFFF), ms);
+}
+
+SDL_GamepadType SdlPad::Type() {
+    return s_pad ? SDL_GetGamepadType(s_pad) : SDL_GAMEPAD_TYPE_UNKNOWN;
+}</code></pre>
+          </div>
+        </div>
+      </details>
+
+      <details>
+        <summary>Learn3dDirectX.cpp（WinMain 部分）</summary>
+        <div class="details-body">
+          <div class="code-wrap">
+            <div class="code-header"><span>MyGame\Learn3dDirectX.cpp</span><button class="copy-btn" type="button">コピー</button></div>
+            <pre><code>#include "System/renderer.h"
+#include "System/keyboard.h"
+#include "System/SdlPad.h"
+#include "Core/engine.h"
+
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow)
+{
+    HRESULT hrCo = CoInitialize(nullptr);
+    if (FAILED(hrCo)) return 0;
+
+    WNDCLASSEX wcex = { sizeof(WNDCLASSEX), CS_CLASSDC, WndProc, 0, 0, hInstance, nullptr, nullptr, nullptr, nullptr, "DX3DClass", nullptr };
+    RegisterClassEx(&amp;wcex);
+    GetHWnd() = CreateWindow("DX3DClass", "DirectX 3D Learning - Day 4", WS_OVERLAPPEDWINDOW, 100, 100, 800, 600, nullptr, nullptr, hInstance, nullptr);
+
+    if (!InitDevice(hInstance, nCmdShow))
+    {
+        CoUninitialize();
+        return 0;
+    }
+
+    SdlPad::Init();       // DirectX初期化の後
+
+    Engine engine;
+    engine.Init();
+    int param = engine.Run();
+
+    SdlPad::Shutdown();   // ループを抜けた後
+    Cleanup();
+    CoUninitialize();
+    return param;
+}</code></pre>
+          </div>
+        </div>
+      </details>
+
+      <details>
+        <summary>Core/engine.cpp</summary>
+        <div class="details-body">
+          <div class="code-wrap">
+            <div class="code-header"><span>MyGame\Core\engine.cpp</span><button class="copy-btn" type="button">コピー</button></div>
+            <pre><code>#include "engine.h"
+#include "System/keyboard.h"
+#include "System/renderer.h"
+#include "System/SdlPad.h"
+#include "Manager/scenemanager.h"
+#include "Component/camera.h"
+
+void Engine::Init() {
+    Keyboard_Initialize();
+}
+
+int Engine::Run() {
+    MSG msg = {};
+    DWORD dwExecLastTime = timeGetTime();
+    DWORD dwCurrentTime = 0;
+    SceneManager::GetInstance().ChangeScene("Sample");
+    while (msg.message != WM_QUIT)
+    {
+        if (PeekMessage(&amp;msg, nullptr, 0, 0, PM_REMOVE))
+        {
+            TranslateMessage(&amp;msg);
+            DispatchMessage(&amp;msg);
+        }
+        else
+        {
+            dwCurrentTime = timeGetTime();
+            if ((dwCurrentTime - dwExecLastTime) &gt;= (1000 / 60))
+            {
+                dwExecLastTime = dwCurrentTime;
+                SdlPad::Update();   // 1フレームに1回、シーン更新の前（elseの先頭に置くとTriggerが効かなくなる）
+                SceneManager::GetInstance().Update();
+                Keyboard_Update();
+                Render_Set();
+                SceneManager::GetInstance().Render();
+                Render_Present();
+            }
+        }
+    }
+    return static_cast&lt;int&gt;(msg.wParam);
+}</code></pre>
+          </div>
+        </div>
+      </details>
+    </section>
+
+    <!-- 10. 配布・今後の拡張 -->
+    <section id="release">
+      <h2><span class="sec-num">10</span>配布時の注意点・今後の拡張アイデア</h2>
+      <div class="callout ok">
+        <div class="callout-title">ゲームを人に渡す・配布するとき</div>
+        <p style="margin:0;">必ず <code>.exe</code> と同じフォルダーに <code>SDL3.dll</code>（<code>SDL3\lib\x64\SDL3.dll</code>）を一緒に入れてください。SDL3 は zlib ライセンスのため、同梱配布・商用利用ともに OK で、クレジット表記も任意です。</p>
+      </div>
+
+      <h3>さらに機能を増やしたいときのヒント</h3>
+      <ul>
+        <li><strong>ボタン表記の自動取得</strong>：<code>SDL_GetGamepadButtonLabel()</code> を使うと、繋いだコントローラーの印字（A/B や ×/○）を自動で判別できます。</li>
+        <li><strong>ジャイロ・傾き操作</strong>：<code>SDL_SetGamepadSensorEnabled()</code> と <code>SDL_GetGamepadSensorData()</code> で対応できます。</li>
+        <li><strong>PS コントローラーのライトバー</strong>：<code>SDL_SetGamepadLED()</code> で好きな色に光らせられます。</li>
+        <li><strong>2人以上の対戦・協力プレイ</strong>：<code>s_pad</code> やボタン配列を人数分の配列（例：4人分）に拡張して管理します。</li>
+      </ul>
+      <p>もっと詳しく知りたいとき：<a href="https://wiki.libsdl.org/SDL3/CategoryGamepad" target="_blank" rel="noopener">SDL3 公式リファレンス（CategoryGamepad）</a> ／ <a href="https://github.com/libsdl-org/SDL/releases" target="_blank" rel="noopener">SDL3 ダウンロードページ（GitHub）</a></p>
+    </section>
+  </main>
+</div>
+
+<script>
+  // Theme toggle
+  (function () {
+    const root = document.documentElement;
+    const btn = document.getElementById('themeToggle');
+    const saved = (() => { try { return localStorage.getItem('sdlpad_theme'); } catch { return null; } })();
+    if (saved === 'dark' || (!saved && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      root.setAttribute('data-theme', 'dark');
+    }
+    function syncLabel() {
+      btn.textContent = root.getAttribute('data-theme') === 'dark' ? 'ライトモード切替' : 'ダークモード切替';
+    }
+    syncLabel();
+    btn.addEventListener('click', () => {
+      const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      if (next === 'dark') root.setAttribute('data-theme', 'dark');
+      else root.removeAttribute('data-theme');
+      try { localStorage.setItem('sdlpad_theme', next); } catch {}
+      syncLabel();
+    });
+  })();
+
+  // Copy helper
+  async function copyText(text) {
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      ta.remove();
+    }
+  }
+
+  // Code block copy buttons
+  document.querySelectorAll('.copy-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const code = btn.closest('.code-wrap').querySelector('pre code').innerText;
+      await copyText(code);
+      const orig = btn.textContent;
+      btn.textContent = 'コピー済み';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = orig; btn.classList.remove('copied'); }, 1500);
+    });
+  });
+
+  // Interactive Gamepad Map
+  (function () {
+    const labelsByCtrl = {
+      xbox: { NORTH: 'Y', SOUTH: 'A', WEST: 'X', EAST: 'B', LB: 'LB', RB: 'RB', LT: 'LT (軸)', RT: 'RT (軸)', BACK: 'View', START: 'Menu', LS: '押込: LS', RS: '押込: RS' },
+      ps:   { NORTH: '△', SOUTH: '×', WEST: '□', EAST: '○', LB: 'L1', RB: 'R1', LT: 'L2 (軸)', RT: 'R2 (軸)', BACK: 'Share', START: 'Options', LS: '押込: L3', RS: '押込: R3' },
+      sw:   { NORTH: 'X', SOUTH: 'B', WEST: 'Y', EAST: 'A', LB: 'L',  RB: 'R',  LT: 'ZL (軸)', RT: 'ZR (軸)', BACK: '－',    START: '＋',      LS: '押込: L押込', RS: '押込: R押込' }
+    };
+
+    const details = {
+      SOUTH:  { name: '下ボタン（Xbox: A / PS: × / Switch: B）', code: 'SdlPad::Trigger(SDL_GAMEPAD_BUTTON_SOUTH)', desc: 'ジャンプや決定などによく使われる右側・下のボタンです。' },
+      EAST:   { name: '右ボタン（Xbox: B / PS: ○ / Switch: A）', code: 'SdlPad::Trigger(SDL_GAMEPAD_BUTTON_EAST)', desc: 'キャンセルや回避などによく使われる右側・右のボタンです。' },
+      WEST:   { name: '左ボタン（Xbox: X / PS: □ / Switch: Y）', code: 'SdlPad::Trigger(SDL_GAMEPAD_BUTTON_WEST)', desc: '攻撃やアクションなどによく使われる右側・左のボタンです。' },
+      NORTH:  { name: '上ボタン（Xbox: Y / PS: △ / Switch: X）', code: 'SdlPad::Trigger(SDL_GAMEPAD_BUTTON_NORTH)', desc: 'メニューや特殊アクションに使われる右側・上のボタンです。' },
+      LB:     { name: '左上肩ボタン（Xbox: LB / PS: L1 / Switch: L）', code: 'SdlPad::Press(SDL_GAMEPAD_BUTTON_LEFT_SHOULDER)', desc: 'ガードやダッシュなどに使いやすい左上のボタンです。' },
+      RB:     { name: '右上肩ボタン（Xbox: RB / PS: R1 / Switch: R）', code: 'SdlPad::Press(SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER)', desc: '攻撃やアイテム切り替えなどに使いやすい右上のボタンです。' },
+      LT:     { name: '左トリガー（Xbox: LT / PS: L2 / Switch: ZL）', code: 'SdlPad::Axis(SDL_GAMEPAD_AXIS_LEFT_TRIGGER)', desc: '0.0f ～ 1.0f の押し込み量で返ります。ボタン代わりにするなら > 0.5f で判定します。' },
+      RT:     { name: '右トリガー（Xbox: RT / PS: R2 / Switch: ZR）', code: 'SdlPad::Axis(SDL_GAMEPAD_AXIS_RIGHT_TRIGGER)', desc: '0.0f ～ 1.0f の押し込み量で返ります。射撃やアクセルに向いています。' },
+      BACK:   { name: '中央左ボタン（Xbox: View / PS: Share / Switch: －）', code: 'SdlPad::Trigger(SDL_GAMEPAD_BUTTON_BACK)', desc: 'マップ表示やサブメニューなどに使われます。' },
+      START:  { name: '中央右ボタン（Xbox: Menu / PS: Options / Switch: ＋）', code: 'SdlPad::Trigger(SDL_GAMEPAD_BUTTON_START)', desc: 'ポーズ画面を開く用途で定番のボタンです。' },
+      DPAD:   { name: '十字キー（上下左右）', code: 'SdlPad::Press(SDL_GAMEPAD_BUTTON_DPAD_UP)', desc: 'UP / DOWN / LEFT / RIGHT の4種類があります。メニュー選択や2D移動に便利です。' },
+      LSTICK: { name: '左スティック（移動＆押し込み）', code: 'float x = SdlPad::Axis(SDL_GAMEPAD_AXIS_LEFTX);\nfloat y = -SdlPad::Axis(SDL_GAMEPAD_AXIS_LEFTY);', desc: '値は -1.0f ～ 1.0f（デッドゾーン20%済み）。押し込みは SDL_GAMEPAD_BUTTON_LEFT_STICK です。' },
+      RSTICK: { name: '右スティック（カメラ＆押し込み）', code: 'float rx = SdlPad::Axis(SDL_GAMEPAD_AXIS_RIGHTX);\nfloat ry = -SdlPad::Axis(SDL_GAMEPAD_AXIS_RIGHTY);', desc: 'カメラ回転などに使います。押し込みは SDL_GAMEPAD_BUTTON_RIGHT_STICK です。' }
+    };
+
+    const tabs = document.querySelectorAll('.pad-tab');
+    const hits = document.querySelectorAll('.pad-hit');
+    const inspName = document.getElementById('inspName');
+    const inspCode = document.getElementById('inspCode');
+    const inspDesc = document.getElementById('inspDesc');
+    const inspCopy = document.getElementById('inspCopy');
+    let currentCode = details.SOUTH.code;
+
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        tabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        const map = labelsByCtrl[tab.dataset.ctrl];
+        document.querySelectorAll('[data-label]').forEach(el => {
+          const key = el.getAttribute('data-label');
+          if (map[key]) el.textContent = map[key];
+        });
+      });
+    });
+
+    hits.forEach(hit => {
+      hit.addEventListener('click', () => {
+        hits.forEach(h => h.classList.remove('selected'));
+        hit.classList.add('selected');
+        const d = details[hit.dataset.id];
+        if (!d) return;
+        inspName.textContent = d.name;
+        inspCode.textContent = d.code.replace(/\n/g, '  ');
+        inspDesc.textContent = d.desc;
+        currentCode = d.code;
+      });
+    });
+
+    inspCopy.addEventListener('click', async () => {
+      await copyText(currentCode);
+      const orig = inspCopy.textContent;
+      inspCopy.textContent = 'コピーしました！';
+      setTimeout(() => { inspCopy.textContent = orig; }, 1400);
+    });
+  })();
+
+  // Persistent checklist
+  document.querySelectorAll('#migrationChecklist input[type="checkbox"]').forEach(chk => {
+    const key = 'sdlpad_v2_' + chk.id;
+    try {
+      if (localStorage.getItem(key) === '1') {
+        chk.checked = true;
+        chk.closest('li').classList.add('done');
+      }
+    } catch {}
+    chk.addEventListener('change', () => {
+      chk.closest('li').classList.toggle('done', chk.checked);
+      try { localStorage.setItem(key, chk.checked ? '1' : '0'); } catch {}
+    });
+  });
+
+  // Scroll spy
+  const sections = document.querySelectorAll('main section[id]');
+  const navLinks = document.querySelectorAll('.sidebar .nav-list a');
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        navLinks.forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + entry.target.id));
+      }
+    });
+  }, { rootMargin: '-15% 0px -70% 0px' });
+  sections.forEach(s => observer.observe(s));
+
+  navLinks.forEach(a => a.addEventListener('click', () => {
+    document.querySelector('.sidebar').classList.remove('open');
+  }));
+</script>
+</body>
+</html>
